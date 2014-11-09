@@ -14,25 +14,24 @@ Name: <Your name here>
 
 #include "scene.h"
 
-#define MAX_TRIANGLES 2000
-#define MAX_SPHERES 10
-#define MAX_LIGHTS 10
-
-char *filename=0;
-
 //different display modes
-#define MODE_DISPLAY 1
-#define MODE_JPEG 2
-int mode=MODE_DISPLAY;
+const int MODE_DISPLAY = 1;
+const int MODE_JPEG = 2;
 
 //you may want to make these smaller for debugging purposes
-#define WIDTH 640
-#define HEIGHT 480
+const int WIDTH = 640;
+const int HEIGHT = 480;
 
 //the field of view of the camera
-#define fov 60.0
+const float fov = 60.0;
 
-unsigned char buffer[HEIGHT][WIDTH][3];
+// Static variables.
+static char *filename = nullptr;
+static int mode = MODE_DISPLAY;
+static unsigned char buffer[HEIGHT][WIDTH][3];
+
+void draw_scene(void);
+void save_jpg(void);
 
 void plot_pixel_display(int x,int y,unsigned char r,unsigned char g,unsigned char b);
 void plot_pixel_jpeg(int x,int y,unsigned char r,unsigned char g,unsigned char b);
@@ -41,7 +40,7 @@ void plot_pixel(int x,int y,unsigned char r,unsigned char g,unsigned char b);
 //MODIFY THIS FUNCTION
 void draw_scene()
 {
-  unsigned int x,y;
+  int x,y;
   //simple output
   for(x=0; x<WIDTH; x++)
   {
@@ -49,7 +48,9 @@ void draw_scene()
     glBegin(GL_POINTS);
     for(y=0;y < HEIGHT;y++)
     {
-      plot_pixel(x,y,x%256,y%256,(x+y)%256);
+      int r, g, b;
+      r = x%256, g = y%256, b = (x+y)%256;
+      plot_pixel(x, y, (unsigned char)r, (unsigned char)g, (unsigned char)b);
     }
     glEnd();
     glFlush();
@@ -59,7 +60,7 @@ void draw_scene()
 
 void plot_pixel_display(int x,int y,unsigned char r,unsigned char g,unsigned char b)
 {
-  glColor3f(((double)r)/256.f,((double)g)/256.f,((double)b)/256.f);
+  glColor3f(((float)r)/256.f,((float)g)/256.f,((float)b)/256.f);
   glVertex2i(x,y);
 }
 
@@ -93,6 +94,11 @@ void save_jpg()
   pic_free(in);      
 
 }
+
+// GLUT routines.
+void display(void);
+void init(void);
+void idle(void);
 
 void display()
 {
@@ -144,7 +150,7 @@ int main (int argc, char ** argv)
   glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
   glutInitWindowPosition(0,0);
   glutInitWindowSize(WIDTH,HEIGHT);
-  int window = glutCreateWindow("Ray Tracer");
+  glutCreateWindow("Ray Tracer");
   glutDisplayFunc(display);
   glutIdleFunc(idle);
   init();

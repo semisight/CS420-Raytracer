@@ -3,7 +3,7 @@
 #include <cmath>
 
 /* Dot and cross products. Non-operator overload functions. */
-double vec3::dot(const vector &a, const vector &b) {
+float vec3::dot(const vector &a, const vector &b) {
     return (a.x * b.x + a.y * b.y + a.z * b.z);
 }
 
@@ -15,8 +15,8 @@ vector vec3::cross(const vector &a, const vector &b) {
 }
 
 
-double vec3::length(const point &a) {
-    return sqrt(point::dot(a, a));
+float vec3::length(const point &a) {
+    return (float)sqrt(point::dot(a, a));
 }
 
 
@@ -27,7 +27,7 @@ point vec3::normalize(const point &a) {
 
 /* Equality operations. */
 bool operator==(const point &a, const point &b) {
-    const double epsilon2 = 0.001;
+    const float epsilon2 = 0.001f;
     vector diff = b - a;
 
     return (point::dot(diff, diff) < epsilon2);
@@ -50,8 +50,14 @@ point operator-(const point &a, const point &b) {
 }
 
 
+/* Negation. */
+point operator-(const point &a) {
+    return point() - a;
+}
+
+
 /* Scalar multiplication. */
-point operator*(double a, const point &b) {
+point operator*(float a, const point &b) {
     return point(a * b.x, a * b.y, a * b.z);
 }
 

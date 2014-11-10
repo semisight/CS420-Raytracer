@@ -21,14 +21,13 @@ const int MODE_JPEG = 2;
 //you may want to make these smaller for debugging purposes
 const int WIDTH = 640;
 const int HEIGHT = 480;
-
-//the field of view of the camera
-const float fov = 60.0;
+const float FOV = 60.0;
 
 // Static variables.
 static char *filename = nullptr;
 static int mode = MODE_DISPLAY;
 static unsigned char buffer[HEIGHT][WIDTH][3];
+static scene *g_pScene;
 
 void draw_scene(void);
 void save_jpg(void);
@@ -40,21 +39,7 @@ void plot_pixel(int x,int y,unsigned char r,unsigned char g,unsigned char b);
 //MODIFY THIS FUNCTION
 void draw_scene()
 {
-  int x,y;
-  //simple output
-  for(x=0; x<WIDTH; x++)
-  {
-    glPointSize(2.0);  
-    glBegin(GL_POINTS);
-    for(y=0;y < HEIGHT;y++)
-    {
-      int r, g, b;
-      r = x%256, g = y%256, b = (x+y)%256;
-      plot_pixel(x, y, (unsigned char)r, (unsigned char)g, (unsigned char)b);
-    }
-    glEnd();
-    glFlush();
-  }
+  g_pScene->render(screen(WIDTH, HEIGHT, FOV, plot_pixel));
   printf("Done!\n"); fflush(stdout);
 }
 
@@ -145,7 +130,7 @@ int main (int argc, char ** argv)
     mode = MODE_DISPLAY;
 
   glutInit(&argc,argv);
-  scene a(argv[1]);
+  g_pScene = new scene(argv[1]);
 
   glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
   glutInitWindowPosition(0,0);

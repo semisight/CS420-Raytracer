@@ -1,14 +1,24 @@
 #include "scene.h"
 
 #include <cassert>
+#include <cmath>
 #include <iostream>
+
+#include <OpenGL/gl.h>
 
 using namespace std;
 
-void readDouble(ifstream &, string, double &);
+screen::screen(int w, int h, float f, pixelFn p) :
+    width(w), height(h), putPixel(p) {
+    fov = f * (float)M_PI / 180.0f;
+    aspect = (float)width/(float)height;
+}
+
+
+void readDouble(ifstream &, string, float &);
 void readVec3(ifstream &, string, vec3 &);
 
-void readDouble(ifstream &in, string check, double &d) {
+void readDouble(ifstream &in, string check, float &d) {
     string noun;
 
     in >> noun;
@@ -106,4 +116,72 @@ scene::scene(string path) {
             exit(0);
         }
     }
+}
+
+
+vector scene::screenToRay(int x, int y, screen screen) {
+    vector rv;
+
+    // Compute x and y. z is always -1.
+    float tfov = tan(screen.fov/2);
+
+    rv.x = (2*x / (float)screen.width - 1) * screen.aspect * tfov;
+    rv.y = (2*y / (float)screen.height - 1) * tfov;
+    rv.z = -1;
+
+    return vector::normalize(rv);
+}
+
+
+// Takes ray u starting at u0 and intersects it with sphere sph.
+bool scene::intersectsSphere(sphere sph, vector u, point u0, point &inter) {
+    // Sphere intersection from geometric queries slides.
+    vector dist = u0 - sph.position;
+    float b = 2 * (vector::dot(u, dist));
+    float c = vector::dot(dist, dist) - sph.radius * sph.radius;
+
+    float discriminant = b*b - 4*c;
+
+    if(discriminant < 0)
+        return false;
+
+    float t0 = (-b + sqrt(discriminant)) / 2;
+    float t1 = (-b - sqrt(discriminant)) / 2;
+    float t = std::min(t0, t1);
+
+    inter = t*u + u0;
+    return true;
+}
+
+
+void scene::render(screen screen) {
+    // Setup GL.
+    glPointSize(2.0);
+    glBegin(GL_POINTS);
+
+    for(int y = 0; y < screen.height; ++y) {
+        for(int x = 0; x < screen.width; ++x) {
+            int r = 0, g = 0, b = 0;
+            vector u = screenToRay(x, y, screen);
+
+            for(sphere sph : spheres) {
+                point inter;
+
+                if(intersectsSphere(sph, u, point(), inter))
+                    r = g = b = 255;
+            }
+
+            screen.putPixel(x, y, (unsigned char)r, (unsigned char)g, (unsigned char)b);
+        }
+
+        // Hack to render on every nth row.
+        if(y % 100 == 0) {
+            glEnd();
+            glFlush();
+            glBegin(GL_POINTS);
+        }
+    }
+
+    glEnd();
+    glFlush();
 }

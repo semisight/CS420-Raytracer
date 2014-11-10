@@ -10,7 +10,7 @@ struct vertex {
     color color_diffuse;
     color color_specular;
     vector normal;
-    double shininess;
+    float shininess;
 };
 
 struct triangle {
@@ -21,8 +21,8 @@ struct sphere {
     point position;
     color color_diffuse;
     color color_specular;
-    double shininess;
-    double radius;
+    float shininess;
+    float radius;
 };
 
 struct light {

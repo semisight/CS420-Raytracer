@@ -31,9 +31,10 @@ private:
     void readTriangle(std::ifstream &in);
     void readLight(std::ifstream &in);
 
-    bool intersectsSphere(sphere sph, vector u, point u0, point &inter);
+    bool intersectsSphere(sphere sph, ray u, float &length);
+    bool intersectsTriangle(triangle tri, ray u, float &length);
 
-    static point screenToRay(int x, int y, screen screen);
+    static ray screenToRay(int x, int y, screen screen);
 
 public:
     scene(std::string path);

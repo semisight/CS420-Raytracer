@@ -23,6 +23,16 @@ struct vec3 {
 typedef vec3 point;
 typedef vec3 vector;
 
+/* Ray type. */
+struct ray {
+    point origin;
+    vector direction; /* Always normalized. */
+
+    ray(point o, vector d) : origin(o) { direction = vector::normalize(d); }
+
+    point at(float t);
+};
+
 /* Some handy arithmetic operators for points/vectors. */
 bool operator==(const point &a, const point &b);
 bool operator!=(const point &a, const point &b);

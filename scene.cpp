@@ -47,7 +47,7 @@ void scene::readTriangle(ifstream &in) {
 
     cout << "found triangle" << endl;
 
-    // Read vertices.
+    /* Read vertices. */
     for(int i = 0; i < 3; ++i) {
         vertex &v = tri.vertices[i];
 
@@ -102,16 +102,16 @@ scene::scene(string path) {
     for(int i = 0; i < num_objects; ++i) {
         string noun;
 
-        // What type of row is this?
+        /* What type of row is this? */
         infile >> noun;
 
-        if(noun.compare("triangle") == 0) {
+        if(noun.compare("triangle") == 0)
             readTriangle(infile);
-        } else if(noun.compare("sphere") == 0) {
+        else if(noun.compare("sphere") == 0)
             readSphere(infile);
-        } else if(noun.compare("light") == 0) {
+        else if(noun.compare("light") == 0)
             readLight(infile);
-        } else {
+        else {
             cout << "unknown type in scene description:" << endl << noun << endl;
             exit(0);
         }
@@ -119,27 +119,31 @@ scene::scene(string path) {
 }
 
 
-vector scene::screenToRay(int x, int y, screen screen) {
-    vector rv;
+ray scene::screenToRay(int x, int y, screen screen) {
+    vector d;
 
-    // Compute x and y. z is always -1.
+    /* Compute x and y. z is always -1. */
     float tfov = tan(screen.fov/2);
 
-    rv.x = (2*x / (float)screen.width - 1) * screen.aspect * tfov;
-    rv.y = (2*y / (float)screen.height - 1) * tfov;
-    rv.z = -1;
+    d.x = (2*x / (float)screen.width - 1) * screen.aspect * tfov;
+    d.y = (2*y / (float)screen.height - 1) * tfov;
+    d.z = -1;
 
-    return vector::normalize(rv);
+    return ray(point(), d);
 }
 
 
-// Takes ray u starting at u0 and intersects it with sphere sph.
-bool scene::intersectsSphere(sphere sph, vector u, point u0, point &inter) {
-    // Sphere intersection from geometric queries slides.
-    vector dist = u0 - sph.position;
-    float b = 2 * (vector::dot(u, dist));
-    float c = vector::dot(dist, dist) - sph.radius * sph.radius;
+/* Takes ray u and tests for intersection with sphere sph. */
+bool scene::intersectsSphere(sphere sph, ray u, float &length) {
+    /* Sphere intersection from geometric queries slides. */
+    vector dist = u.origin - sph.position;
 
+    /* First check if ray is cast from inside sphere. */
+    if(vector::length(dist) < sph.radius)
+        return false;
+
+    float b = 2 * (vector::dot(u.direction, dist));
+    float c = vector::dot(dist, dist) - sph.radius * sph.radius;
     float discriminant = b*b - 4*c;
 
     if(discriminant < 0)
@@ -149,32 +153,94 @@ bool scene::intersectsSphere(sphere sph, vector u, point u0, point &inter) {
     float t1 = (-b - sqrt(discriminant)) / 2;
     float t = std::min(t0, t1);
 
-    inter = t*u + u0;
+    length = t;
+    return true;
+}
+
+
+template<typename T>
+bool between(T a, T b, T c);
+
+template<typename T>
+bool between(T a, T b, T c) {
+    return (a <= b) && (b <= c);
+}
+
+
+/* Takes a ray u and tests for intersection with triangle tri. */
+bool scene::intersectsTriangle(triangle tri, ray u, float &length) {
+    /* First, find the triangle plane. */
+    point A = tri.vertices[0].position,
+          B = tri.vertices[1].position,
+          C = tri.vertices[2].position;
+    vector normal = vector::cross(B - A, C - A);
+
+    /* These are defined for convenience. */
+    float UdotN = vector::dot(u.direction, normal);
+    float PmOdotN = vector::dot(A - u.origin, normal);
+
+    /* We're not checking if we are parallel to the plane. */
+
+    /* Calculate our t value (ray direction multiplier) and intersection
+       point. */
+    float t = PmOdotN / UdotN;
+    point P = u.at(t);
+
+    /* Don't bother if the triangle is behind us. */
+    if(t <= 0)
+        return false;
+
+    /* Find the area of the triangle. */
+    float areaTotal2 = vector::length(normal);
+    float alpha = vector::length(vector::cross(B - P, C - P)) / areaTotal2;
+    float beta  = vector::length(vector::cross(C - P, A - P)) / areaTotal2;
+    float gamma = vector::length(vector::cross(A - P, B - P)) / areaTotal2;
+
+    /* alpha, beta, and gamma must be between 0 and 1 and sum to 1. */
+    if(!between(0.f, alpha, 1.f) ||
+       !between(0.f, beta, 1.f)  ||
+       !between(0.f, gamma, 1.f) ||
+       fabs(1.f - alpha - beta - gamma) > .001)
+        return false;
+
+    length = vector::length(P - u.origin);
     return true;
 }
 
 
 void scene::render(screen screen) {
-    // Setup GL.
+    /* Setup GL. */
     glPointSize(2.0);
     glBegin(GL_POINTS);
 
     for(int y = 0; y < screen.height; ++y) {
         for(int x = 0; x < screen.width; ++x) {
             int r = 0, g = 0, b = 0;
-            vector u = screenToRay(x, y, screen);
+            ray u = screenToRay(x, y, screen);
+            float dist = 10000;
 
             for(sphere sph : spheres) {
-                point inter;
+                float length;
 
-                if(intersectsSphere(sph, u, point(), inter))
-                    r = g = b = 255;
+                if(intersectsSphere(sph, u, length) && length < dist) {
+                    r = g = b = length * 20;
+                    dist = length;
+                }
+            }
+
+            for(triangle tri : triangles) {
+                float length;
+
+                if(intersectsTriangle(tri, u, length) && length < dist) {
+                    r = g = b = length * 20;
+                    dist = length;
+                }
             }
 
             screen.putPixel(x, y, (unsigned char)r, (unsigned char)g, (unsigned char)b);
         }
 
-        // Hack to render on every nth row.
+        /* Hack to render on every nth row. */
         if(y % 100 == 0) {
             glEnd();
             glFlush();

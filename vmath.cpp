@@ -25,6 +25,12 @@ point vec3::normalize(const point &a) {
 }
 
 
+/* Evaluate the ray to find the point at multiplier t. */
+point ray::at(float t) {
+    return t*direction + origin;
+}
+
+
 /* Equality operations. */
 bool operator==(const point &a, const point &b) {
     const float epsilon2 = 0.001f;

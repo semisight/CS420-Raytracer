@@ -17,6 +17,7 @@ struct vec3 {
     static vec3 cross(const vec3 &a, const vec3 &b);
     static float length(const vec3 &a);
     static vec3 normalize(const vec3 &a);
+    static vec3 clamp(const vec3 &a);
 };
 
 /* this can also represent a vector. */
@@ -38,6 +39,7 @@ bool operator==(const point &a, const point &b);
 bool operator!=(const point &a, const point &b);
 point operator+(const point &a, const point &b);
 point operator-(const point &a, const point &b);
+point operator*(const point &a, const point &b);
 point operator*(float a, const point &b);
 
 point operator-(const point &a);

@@ -25,6 +25,16 @@ point vec3::normalize(const point &a) {
 }
 
 
+vec3 vec3::clamp(const vec3 &a) {
+    vec3 rv = a;
+
+    rv.x = (rv.x > 1) ? 1 : ((rv.x < 0) ? 0 : rv.x);
+    rv.y = (rv.y > 1) ? 1 : ((rv.y < 0) ? 0 : rv.y);
+    rv.z = (rv.z > 1) ? 1 : ((rv.z < 0) ? 0 : rv.z);
+    return rv;
+}
+
+
 /* Evaluate the ray to find the point at multiplier t. */
 point ray::at(float t) {
     return t*direction + origin;
@@ -53,6 +63,12 @@ point operator+(const point &a, const point &b) {
 
 point operator-(const point &a, const point &b) {
     return point(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+
+/* Element-wise multiplication. */
+point operator*(const point &a, const point &b) {
+    return point(a.x * b.x, a.y * b.y, a.z * b.z);
 }
 
 

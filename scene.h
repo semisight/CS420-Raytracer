@@ -1,6 +1,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#include <cfloat>
 #include <deque>
 #include <fstream>
 #include <string>
@@ -20,6 +21,20 @@ struct screen {
     screen(int w, int h, float f, pixelFn p);
 };
 
+struct fragment {
+    point position;
+    color color_diffuse;
+    color color_specular;
+    vector normal;
+    vector camera;
+    float shininess;
+
+    fragment() {}
+    fragment(point p, color d, color s, vector n, vector c, float sh) :
+        position(p), color_diffuse(d), color_specular(s), normal(n), camera(c),
+        shininess(sh) {}
+};
+
 class scene {
 private:
     std::deque<triangle> triangles;
@@ -31,10 +46,16 @@ private:
     void readTriangle(std::ifstream &in);
     void readLight(std::ifstream &in);
 
-    bool intersectsSphere(sphere sph, ray u, float &length);
-    bool intersectsTriangle(triangle tri, ray u, float &length);
+    /* Object intersection code. */
+    bool intersectsSphere(sphere sph, ray u, fragment &frag) const;
+    bool intersectsTriangle(triangle tri, ray u, fragment &frag) const;
+    bool intersectsObject(ray u, fragment &frag, float stop_limit = FLT_MIN) const;
 
-    static ray screenToRay(int x, int y, screen screen);
+    /* Lighting/shading code. */
+    color getLightContribution(const light li, const fragment frag) const;
+    color shadeFragment(const float &x, const float &y, const screen &screen) const;
+
+    static ray screenToRay(const float &x, const float &y, const screen &screen);
 
 public:
     scene(std::string path);

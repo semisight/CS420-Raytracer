@@ -12,13 +12,16 @@
 typedef unsigned char u8;
 typedef std::function<void(int, int, u8, u8, u8)> pixelFn;
 
+enum class sampleType { X1, SGSSAA };
+
 struct screen {
     int width, height;
     float aspect;
     float fov;
     pixelFn putPixel;
+    sampleType sampling;
 
-    screen(int w, int h, float f, pixelFn p);
+    screen(int w, int h, float f, pixelFn p, sampleType s);
 };
 
 struct fragment {
@@ -49,11 +52,14 @@ private:
     /* Object intersection code. */
     bool intersectsSphere(sphere sph, ray u, fragment &frag) const;
     bool intersectsTriangle(triangle tri, ray u, fragment &frag) const;
-    bool intersectsObject(ray u, fragment &frag, float stop_limit = FLT_MIN) const;
+    bool intersectsObject(ray u, fragment &frag, float stop_limit = FLT_MIN, bool boost = false) const;
 
     /* Lighting/shading code. */
     color getLightContribution(const light li, const fragment frag) const;
     color shadeFragment(const float &x, const float &y, const screen &screen) const;
+
+    /* Sampling. */
+    color sample(const int x, const int y, const screen &screen);
 
     static ray screenToRay(const float &x, const float &y, const screen &screen);
 

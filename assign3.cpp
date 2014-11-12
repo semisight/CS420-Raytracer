@@ -39,7 +39,7 @@ void plot_pixel(int x,int y,unsigned char r,unsigned char g,unsigned char b);
 //MODIFY THIS FUNCTION
 void draw_scene()
 {
-  g_pScene->render(screen(WIDTH, HEIGHT, FOV, plot_pixel));
+  g_pScene->render(screen(WIDTH, HEIGHT, FOV, plot_pixel, sampleType::X1));
   printf("Done!\n"); fflush(stdout);
 }
 

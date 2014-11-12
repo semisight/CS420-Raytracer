@@ -8,8 +8,8 @@
 
 using namespace std;
 
-screen::screen(int w, int h, float f, pixelFn p) :
-    width(w), height(h), putPixel(p) {
+screen::screen(int w, int h, float f, pixelFn p, sampleType s) :
+    width(w), height(h), sampling(s), putPixel(p) {
     fov = f * (float)M_PI / 180.0f;
     aspect = (float)width/(float)height;
 }
@@ -125,6 +125,7 @@ ray scene::screenToRay(const float &x, const float &y, const screen &screen) {
     /* Compute x and y. z is always -1. */
     float tfov = tan(screen.fov/2);
 
+    /* TODO: add offset for middle of pixel. */
     d.x = (2*x / screen.width - 1) * screen.aspect * tfov;
     d.y = (2*y / screen.height - 1) * tfov;
     d.z = -1;
@@ -153,7 +154,8 @@ bool scene::intersectsSphere(sphere sph, ray u, fragment &frag) const {
     float t1 = (-b - sqrt(discriminant)) / 2;
     float t = std::min(t0, t1);
 
-    if(t < FLT_EPSILON)
+    /* Don't bother if the sphere is behind us or if self-intersection. */
+    if(t <= FLT_EPSILON)
         return false;
 
     point p = t*u.direction + u.origin;
@@ -191,7 +193,7 @@ bool scene::intersectsTriangle(triangle tri, ray u, fragment &frag) const {
     point P = u.at(t);
 
     /* Don't bother if the triangle is behind us. */
-    if(t <= 20*FLT_EPSILON)
+    if(t <= FLT_EPSILON)
         return false;
 
     /* Find the area of the triangle. */
@@ -204,7 +206,7 @@ bool scene::intersectsTriangle(triangle tri, ray u, fragment &frag) const {
     if(!between(0.f, alpha, 1.f) ||
        !between(0.f, beta, 1.f)  ||
        !between(0.f, gamma, 1.f) ||
-       fabs(1.f - alpha - beta - gamma) > .001)
+       fabs(1.f - alpha - beta - gamma) > .0001)
         return false;
 
     color diffuse = alpha * tri.vertices[0].color_diffuse +
@@ -223,10 +225,13 @@ bool scene::intersectsTriangle(triangle tri, ray u, fragment &frag) const {
 
 /* Finds if ray intersects any object in scene. Optionally stops when distance
    under stop_limit is found, and returns that object's data. */
-bool scene::intersectsObject(ray u, fragment &frag, float stop_limit) const {
+bool scene::intersectsObject(ray u, fragment &frag, float stop_limit, bool boost) const {
     float dist = FLT_MAX, length = FLT_MAX;
     bool intersects = false;
     fragment tmp;
+
+    if(boost)
+        u.origin = u.origin + 0.01f * u.direction;
 
     for(sphere sph : spheres) {
         if(intersectsSphere(sph, u, tmp)) {
@@ -272,7 +277,7 @@ color scene::getLightContribution(const light li, const fragment frag) const {
     fragment tmp;
 
     /* Don't do anything if it hits something. Return 0. */
-    if(intersectsObject(toLight, tmp, vector::length(dir)))
+    if(intersectsObject(toLight, tmp, vector::length(dir), true))
         return color();
 
     /* Calculate color contribution from diffuse. */
@@ -290,6 +295,7 @@ color scene::getLightContribution(const light li, const fragment frag) const {
 }
 
 
+/* Responsible for aggregating the color that a pixel should be. */
 color scene::shadeFragment(const float &x, const float &y, const screen &screen) const {
     ray u = screenToRay(x, y, screen);
     fragment frag;
@@ -310,6 +316,27 @@ color scene::shadeFragment(const float &x, const float &y, const screen &screen)
 }
 
 
+/* Gets a sample for a specific point on the screen. Multisampling! */
+color scene::sample(const int x, const int y, const screen &screen) {
+    color rv;
+
+    switch(screen.sampling) {
+    case sampleType::X1:
+        rv = shadeFragment(x, y, screen);
+        break;
+    case sampleType::SGSSAA:
+        rv = rv + shadeFragment(x-0.25f, y-0.25f, screen);
+        rv = rv + shadeFragment(x+0.25f, y-0.25f, screen);
+        rv = rv + shadeFragment(x-0.25f, y+0.25f, screen);
+        rv = rv + shadeFragment(x+0.25f, y+0.25f, screen);
+        rv = 0.25f * rv;
+        break;
+    }
+
+    return rv;
+}
+
+
 void scene::render(screen screen) {
     /* Setup GL. */
     glPointSize(2.0);
@@ -317,7 +344,7 @@ void scene::render(screen screen) {
 
     for(int y = 0; y < screen.height; ++y) {
         for(int x = 0; x < screen.width; ++x) {
-            color final = shadeFragment(x, y, screen);
+            color final = sample(x, y, screen);
 
             screen.putPixel(x, y, (unsigned char)final.x,
                                   (unsigned char)final.y,

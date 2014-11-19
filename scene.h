@@ -12,7 +12,7 @@
 typedef unsigned char u8;
 typedef std::function<void(int, int, u8, u8, u8)> pixelFn;
 
-enum class sampleType { X1, SGSSAA };
+enum class sampleType { X1, SGSSAA, RGSSAA };
 
 struct screen {
     int width, height;

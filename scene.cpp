@@ -330,17 +330,27 @@ color scene::shadeFragment(const float &x, const float &y, const screen &screen)
 color scene::sample(const int x, const int y, const screen &screen) {
     color rv;
 
+    constexpr float SGOffset = .3536f;
+    constexpr float RG1Offset = .25f;
+    constexpr float RG2Offset = .4330f;
+
     switch(screen.sampling) {
     case sampleType::X1:
         rv = shadeFragment(x, y, screen);
         break;
     case sampleType::SGSSAA:
-        rv = rv + shadeFragment(x-0.25f, y-0.25f, screen);
-        rv = rv + shadeFragment(x+0.25f, y-0.25f, screen);
-        rv = rv + shadeFragment(x-0.25f, y+0.25f, screen);
-        rv = rv + shadeFragment(x+0.25f, y+0.25f, screen);
+        rv = rv + shadeFragment(x-SGOffset, y-SGOffset, screen);
+        rv = rv + shadeFragment(x+SGOffset, y-SGOffset, screen);
+        rv = rv + shadeFragment(x-SGOffset, y+SGOffset, screen);
+        rv = rv + shadeFragment(x+SGOffset, y+SGOffset, screen);
         rv = 0.25f * rv;
         break;
+    case sampleType::RGSSAA:
+        rv = rv + shadeFragment(x+RG1Offset, y+RG2Offset, screen);
+        rv = rv + shadeFragment(x-RG2Offset, y+RG1Offset, screen);
+        rv = rv + shadeFragment(x-RG1Offset, y-RG2Offset, screen);
+        rv = rv + shadeFragment(x+RG2Offset, y-RG1Offset, screen);
+        rv = 0.25f * rv;
     }
 
     return rv;

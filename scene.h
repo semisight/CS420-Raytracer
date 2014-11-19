@@ -52,7 +52,7 @@ private:
     /* Object intersection code. */
     bool intersectsSphere(sphere sph, ray u, fragment &frag) const;
     bool intersectsTriangle(triangle tri, ray u, fragment &frag) const;
-    bool intersectsObject(ray u, fragment &frag, float stop_limit = FLT_MAX, bool boost = false) const;
+    bool intersectsObject(ray u, fragment &frag, float stop_limit = FLT_MAX) const;
 
     /* Lighting/shading code. */
     color getLightContribution(const light li, const fragment frag) const;

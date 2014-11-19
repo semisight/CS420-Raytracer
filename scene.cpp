@@ -157,7 +157,7 @@ bool scene::intersectsSphere(sphere sph, ray u, fragment &frag) const {
     float t = std::min(t0, t1);
 
     /* Don't bother if the sphere is behind us or if self-intersection. */
-    if(t <= FLT_EPSILON)
+    if(t <= .001)
         return false;
 
     point p = u.at(t);
@@ -200,7 +200,7 @@ bool scene::intersectsTriangle(triangle tri, ray u, fragment &frag) const {
     point P = u.at(t);
 
     /* Don't bother if the triangle is behind us. */
-    if(t <= FLT_EPSILON)
+    if(t <= .001)
         return false;
 
     /* Find the area of the triangle. */
@@ -225,20 +225,21 @@ bool scene::intersectsTriangle(triangle tri, ray u, fragment &frag) const {
     float shininess = alpha * tri.vertices[0].shininess +
                       beta  * tri.vertices[1].shininess +
                       gamma * tri.vertices[2].shininess;
-    frag = fragment(P, diffuse, specular, normal, u.direction, shininess);
+    vector pnormal = vector::normalize(alpha * tri.vertices[0].normal +
+                                       beta  * tri.vertices[1].normal +
+                                       gamma * tri.vertices[2].normal);
+
+    frag = fragment(P, diffuse, specular, pnormal, u.direction, shininess);
     return true;
 }
 
 
 /* Finds if ray intersects any object in scene. Optionally stops when distance
    under stop_limit is found, and returns that object's data. */
-bool scene::intersectsObject(ray u, fragment &frag, float stop_limit, bool boost) const {
+bool scene::intersectsObject(ray u, fragment &frag, float stop_limit) const {
     float dist = FLT_MAX, length = FLT_MAX;
     bool intersects = false;
     fragment tmp;
-
-    if(boost)
-        u.origin = u.origin + 0.01f * u.direction;
 
     for(sphere sph : spheres) {
         if(intersectsSphere(sph, u, tmp)) {
@@ -284,7 +285,7 @@ color scene::getLightContribution(const light li, const fragment frag) const {
     fragment tmp;
 
     /* Don't do anything if it hits something. Return 0. */
-    if(intersectsObject(toLight, tmp, vector::length(dir), true))
+    if(intersectsObject(toLight, tmp, vector::length(dir)))
         return color();
 
     /* Calculate color contribution from diffuse. */

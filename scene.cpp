@@ -124,10 +124,12 @@ ray scene::screenToRay(const float &x, const float &y, const screen &screen) {
 
     /* Compute x and y. z is always -1. */
     float tfov = tan(screen.fov/2);
+    float i = x + 0.5f;
+    float j = y + 0.5f;
 
     /* TODO: add offset for middle of pixel. */
-    d.x = (2*x / screen.width - 1) * screen.aspect * tfov;
-    d.y = (2*y / screen.height - 1) * tfov;
+    d.x = (2*i / screen.width  - 1) * screen.aspect * tfov;
+    d.y = (2*j / screen.height - 1) * tfov;
     d.z = -1;
 
     return ray(point(), d);
@@ -158,7 +160,7 @@ bool scene::intersectsSphere(sphere sph, ray u, fragment &frag) const {
     if(t <= FLT_EPSILON)
         return false;
 
-    point p = t*u.direction + u.origin;
+    point p = u.at(t);
     frag = fragment(p, sph.color_diffuse, sph.color_specular,
         vector::normalize(p - sph.position), u.direction, sph.shininess);
     return true;
@@ -183,13 +185,18 @@ bool scene::intersectsTriangle(triangle tri, ray u, fragment &frag) const {
     vector tri_cross = vector::cross(B - A, C - A);
     vector normal = vector::normalize(tri_cross);
 
-    /* These are defined for convenience. */
-    float UdotN = vector::dot(u.direction, normal);
-    float PmOdotN = vector::dot(A - u.origin, normal);
+    /* Calculate d from the implicit plane equation ax+by+cz+d=0. */
+    float dPlane = vector::dot(normal, -A);
+
+    /* Get the normal * direction and check if zero (parallel). */
+    float NdotU = vector::dot(normal, u.direction);
+
+    if(abs(NdotU) <= FLT_EPSILON)
+        return false;
 
     /* Calculate our t value (ray direction multiplier) and intersection
        point. */
-    float t = PmOdotN / UdotN;
+    float t = -(vector::dot(normal, u.origin) + dPlane) / NdotU;
     point P = u.at(t);
 
     /* Don't bother if the triangle is behind us. */
@@ -235,32 +242,32 @@ bool scene::intersectsObject(ray u, fragment &frag, float stop_limit, bool boost
 
     for(sphere sph : spheres) {
         if(intersectsSphere(sph, u, tmp)) {
+            length = vector::length(tmp.position - u.origin);
+
+            if(length >= stop_limit)
+                continue;
+
             intersects = true;
-            length = vector::dot(tmp.position - u.origin,
-                tmp.position - u.origin);
 
             if(length < dist) {
                 dist = length;
                 frag = tmp;
-
-                if(dist < stop_limit)
-                    return true;
             }
         }
     }
 
     for(triangle tri : triangles) {
         if(intersectsTriangle(tri, u, tmp)) {
+            length = vector::length(tmp.position - u.origin);
+
+            if(length >= stop_limit)
+                continue;
+
             intersects = true;
-            length = vector::dot(tmp.position - u.origin,
-                tmp.position - u.origin);
 
             if(length < dist) {
                 dist = length;
                 frag = tmp;
-
-                if(dist < stop_limit)
-                    return true;
             }
         }
     }
@@ -272,8 +279,8 @@ bool scene::intersectsObject(ray u, fragment &frag, float stop_limit, bool boost
 /* Get the contribution from a single light. */
 color scene::getLightContribution(const light li, const fragment frag) const {
     vector dir = li.position - frag.position;
-    vector L = vector::normalize(dir);
-    ray toLight(frag.position, L);
+    ray toLight(frag.position, dir);
+    vector L = toLight.direction;
     fragment tmp;
 
     /* Don't do anything if it hits something. Return 0. */
@@ -282,12 +289,14 @@ color scene::getLightContribution(const light li, const fragment frag) const {
 
     /* Calculate color contribution from diffuse. */
     float LdotN = vector::dot(L, frag.normal);
-    LdotN = (LdotN < 0) ? 0 : LdotN;
 
     /* Calculate color contribution from specular. */
     vector R = vector::normalize(2 * LdotN * frag.normal - L);
     float RdotV = vector::dot(R, -frag.camera);
+
+    LdotN = (LdotN < 0) ? 0 : LdotN;
     RdotV = (RdotV < 0) ? 0 : RdotV;
+    
     float RdotVtoa = pow(RdotV, frag.shininess);
 
     return li.color * (LdotN * frag.color_diffuse +

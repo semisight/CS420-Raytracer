@@ -9,7 +9,7 @@
 using namespace std;
 
 screen::screen(int w, int h, float f, pixelFn p, sampleType s) :
-    width(w), height(h), sampling(s), putPixel(p) {
+    width(w), height(h), putPixel(p), sampling(s) {
     fov = f * (float)M_PI / 180.0f;
     aspect = (float)width/(float)height;
 }
@@ -321,7 +321,7 @@ color scene::shadeFragment(const float &x, const float &y, const screen &screen)
         /* Finally, add ambient and clamp. Convert to [0, 255]. */
         return 255 * color::clamp(col + ambientLight);
     } else {
-        return color(255, 255, 255);
+        return color(255);
     }
 }
 

@@ -10,6 +10,7 @@ struct vec3 {
     float z;
 
     vec3() : x(0), y(0), z(0) {}
+    vec3(float i) : x(i), y(i), z(i) {}
     vec3(float i, float j, float k) : x(i), y(j), z(k) {}
 
     /* Dot and cross products. Non-operator overload functions. */

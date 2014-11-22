@@ -23,7 +23,7 @@ const int WIDTH = 640;
 const int HEIGHT = 480;
 const float FOV = 60.0;
 const sampleType SAMPLING = sampleType::X1;
-const size_t NUM_REFLECTIONS = 1;
+const size_t NUM_REFLECTIONS = 0;
 
 // Static variables.
 static char *filename = nullptr;

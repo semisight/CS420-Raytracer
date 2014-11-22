@@ -10,7 +10,7 @@ INCLUDE = -I$(PIC_PATH)
 LIBRARIES = -L$(PIC_PATH) -framework OpenGL -framework GLUT -lpicio $(PIC_PATH)/libjpeg.a
 
 COMPILER = clang++
-COMPILERFLAGS = -g -Ofast -flto -ffast-math -std=c++11 $(INCLUDE)
+COMPILERFLAGS = -Ofast -flto -ffast-math -std=c++11 $(INCLUDE)
 WARNINGS = -Weverything -Wno-padded -Wno-c++98-compat -Wno-deprecated-declarations
 
 PROGRAM = assign3

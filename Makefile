@@ -14,8 +14,8 @@ COMPILERFLAGS = -g -Ofast -flto -ffast-math -std=c++11 $(INCLUDE)
 WARNINGS = -Weverything -Wno-padded -Wno-c++98-compat -Wno-deprecated-declarations
 
 PROGRAM = assign3
-SOURCE = assign3.cpp vmath.cpp objects.cpp scene.cpp
-OBJECT = assign3.o vmath.o objects.o scene.o
+SOURCE = assign3.cpp vmath.cpp scene.cpp
+OBJECT = assign3.o vmath.o scene.o
 
 .cpp.o: 
 	$(COMPILER) -c $(COMPILERFLAGS) $(WARNINGS) $<

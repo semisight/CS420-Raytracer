@@ -20,8 +20,9 @@ struct screen {
     float fov;
     pixelFn putPixel;
     sampleType sampling;
+    size_t num_reflections;
 
-    screen(int w, int h, float f, pixelFn p, sampleType s);
+    screen(int w, int h, float f, pixelFn p, sampleType s, size_t rs);
 };
 
 struct fragment {
@@ -56,6 +57,7 @@ private:
 
     /* Lighting/shading code. */
     color getLightContribution(const light li, const fragment frag) const;
+    color shadeFragment(const ray &u, size_t reflects) const;
     color shadeFragment(const float &x, const float &y, const screen &screen) const;
 
     /* Sampling. */

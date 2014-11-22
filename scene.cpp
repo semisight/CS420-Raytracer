@@ -8,8 +8,8 @@
 
 using namespace std;
 
-screen::screen(int w, int h, float f, pixelFn p, sampleType s) :
-    width(w), height(h), putPixel(p), sampling(s) {
+screen::screen(int w, int h, float f, pixelFn p, sampleType s, size_t rs) :
+    width(w), height(h), putPixel(p), sampling(s), num_reflections(rs) {
     fov = f * (float)M_PI / 180.0f;
     aspect = (float)width/(float)height;
 }
@@ -306,23 +306,43 @@ color scene::getLightContribution(const light li, const fragment frag) const {
 
 
 /* Responsible for aggregating the color that a pixel should be. */
-color scene::shadeFragment(const float &x, const float &y, const screen &screen) const {
-    ray u = screenToRay(x, y, screen);
+color scene::shadeFragment(const ray &u, size_t reflects) const {
+    color final;
+    color phong = ambientLight;
     fragment frag;
 
     /* Test for initial object intersection. */
-    if(intersectsObject(u, frag)) {
-        color col;
-
-        /* Add in contribution from each light. */
-        for(light li : lights)
-            col = col + getLightContribution(li, frag);
-
-        /* Finally, add ambient and clamp. Convert to [0, 255]. */
-        return 255 * color::clamp(col + ambientLight);
-    } else {
-        return color(255);
+    if(!intersectsObject(u, frag)) {
+        return color(1);
     }
+
+    /* Add in contribution from each light. */
+    for(light li : lights) {
+        phong = phong + getLightContribution(li, frag);
+    }
+
+    /* If calculating reflected light, calculate here. */
+    if (reflects != 0) {
+        vector V = -u.direction, N = frag.normal;
+        vector R = vector::normalize(2 * vector::dot(V, N) * N - V);
+        ray uprime(frag.position, R);
+
+        /* Calculate reflection. */
+        color reflect = shadeFragment(uprime, reflects-1);
+
+        final = frag.color_specular * reflect +
+            (color(1) - frag.color_specular) * phong;
+    } else {
+        final = phong;
+    }
+
+    return color::clamp(final);
+}
+
+
+color scene::shadeFragment(const float &x, const float &y, const screen &screen) const {
+    ray u = screenToRay(x, y, screen);
+    return shadeFragment(u, screen.num_reflections);
 }
 
 
@@ -353,7 +373,7 @@ color scene::sample(const int x, const int y, const screen &screen) {
         rv = 0.25f * rv;
     }
 
-    return rv;
+    return 255 * rv;
 }
 
 

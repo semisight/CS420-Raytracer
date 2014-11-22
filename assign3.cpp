@@ -22,6 +22,8 @@ const int MODE_JPEG = 2;
 const int WIDTH = 640;
 const int HEIGHT = 480;
 const float FOV = 60.0;
+const sampleType SAMPLING = sampleType::X1;
+const size_t NUM_REFLECTIONS = 1;
 
 // Static variables.
 static char *filename = nullptr;
@@ -39,7 +41,7 @@ void plot_pixel(int x,int y,unsigned char r,unsigned char g,unsigned char b);
 //MODIFY THIS FUNCTION
 void draw_scene()
 {
-  g_pScene->render(screen(WIDTH, HEIGHT, FOV, plot_pixel, sampleType::X1));
+  g_pScene->render(screen(WIDTH, HEIGHT, FOV, plot_pixel, SAMPLING, NUM_REFLECTIONS));
   printf("Done!\n"); fflush(stdout);
 }
 
